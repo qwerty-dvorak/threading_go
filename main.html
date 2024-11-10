@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Minimal Email Sender</title>
+</head>
+<body>
+  <form id="emailForm">
+    <label for="from">From:</label><br>
+    <input type="text" id="from" name="from"><br><br>
+
+    <label for="fromname">From Name:</label><br>
+    <input type="text" id="fromname" name="fromname"><br><br>
+
+    <label for="to">To:</label><br>
+    <input type="text" id="to" name="to"><br><br>
+
+    <label for="subject">Subject:</label><br>
+    <input type="text" id="subject" name="subject"><br><br>
+
+    <label for="replyto">Reply To:</label><br>
+    <input type="text" id="replyto" name="replyto"><br><br>
+
+    <label for="body">Body:</label><br>
+    <textarea id="body" name="body"></textarea><br><br>
+
+    <label for="attachments">Attachments:</label><br>
+    <input type="file" id="attachments" name="attachments" accept="image/*" multiple><br><br>
+
+    <label for="excel">Excel Sheet:</label><br>
+    <input type="file" id="excel" name="excel" accept=".xlsx, .xls"><br><br>
+
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    // Replace 'YOUR_BACKEND_URL' with the actual backend URL saved in your environment
+    const backendUrl = 'http://localhost:3000/';
+
+    document.getElementById('emailForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const emailData = {
+        from: document.getElementById('from').value,
+        fromname: document.getElementById('fromname').value,
+        to: document.getElementById('to').value,
+        subject: document.getElementById('subject').value,
+        replyto: document.getElementById('replyto').value,
+        body: document.getElementById('body').value,
+        attachments: {},
+        excel: null
+      };
+
+      const attachments = document.getElementById('attachments').files;
+      let attachmentsProcessed = 0;
+
+      for (let i = 0; i < attachments.length; i++) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          emailData.attachments[attachments[i].name] = {
+            data: e.target.result
+          };
+          attachmentsProcessed++;
+          if (attachmentsProcessed === attachments.length) {
+            processExcelFile();
+          }
+        };
+        reader.readAsDataURL(attachments[i]);
+      }
+
+      function processExcelFile() {
+        const excelFile = document.getElementById('excel').files[0];
+        if (excelFile) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            emailData.excel = {
+              name: excelFile.name,
+              data: e.target.result
+            };
+            sendEmailData(emailData);
+          };
+          reader.readAsDataURL(excelFile);
+        } else {
+          sendEmailData(emailData);
+        }
+      }
+
+      if (attachments.length === 0) {
+        processExcelFile();
+      }
+    });
+
+    function sendEmailData(emailData) {
+      fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(emailData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Email sent successfully:', data);
+      })
+      .catch(error => {
+        console.error('Error sending email:', error);
+      });
+    }
+  </script>
+</body>
+</html>
