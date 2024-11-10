@@ -38,9 +38,9 @@
         <p style="font-size: 16px; color: #ff7c00;">Dear {{.Name}},</p>
         <p>We’ve got some information for you.</p>
         <p>You are {{.Age}} years old and live in {{.City}}
-        <img src="cid:photo1.png" alt="Photo 1">
+        <img src="cid:PNG_Test.png" alt="Photo 1">
         <p>Stay tuned for more updates  .</p>
-        <img src="cid:photo2.jpeg" alt="Photo 2">
+        <img src="cid:JPG_Test.jpg" alt="Photo 2">
         <p>Sincerely,<br><strong>Sender {{.Random}} </strong></p>
     </div>
 </body>

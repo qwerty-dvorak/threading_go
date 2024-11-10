@@ -13,7 +13,6 @@ import (
     "net/smtp"
     "net/textproto"
     "os"
-    //"strconv"
     "strings"
 )
 
@@ -59,11 +58,15 @@ func main() {
     // Read the JSON content
     byteValue, _ := io.ReadAll(jsonFile)
 
-    // Define a struct to hold the attachments
+    // Define a struct to hold the attachments and CSV data
     type Attachments struct {
         Attachments map[string]struct {
             Data string `json:"data"`
         } `json:"attachments"`
+        CSV struct {
+            Data string `json:"data"`
+            Name string `json:"name"`
+        } `json:"csv"`
     }
 
     var attachments Attachments
@@ -95,15 +98,18 @@ func main() {
         })
     }
 
-    // Open the CSV file
-    file, err := os.Open("tester.csv")
-    if err != nil {
-        log.Fatalf("Unable to open CSV file: %v", err)
+    // Decode the CSV data from the JSON
+    csvDataParts := strings.SplitN(attachments.CSV.Data, ",", 2)
+    if len(csvDataParts) != 2 {
+        log.Fatalf("Invalid CSV data format")
     }
-    defer file.Close()
+    csvData, err := base64.StdEncoding.DecodeString(csvDataParts[1])
+    if err != nil {
+        log.Fatalf("Error decoding base64 CSV data: %v", err)
+    }
 
     // Read CSV data
-    reader := csv.NewReader(file)
+    reader := csv.NewReader(bytes.NewReader(csvData))
     // Parse the email template
     tmpl, err := template.ParseFiles("template.txt")
     if err != nil {
@@ -132,7 +138,6 @@ func main() {
         }
         records = append(records, data)
     }
-
 
     for _, record := range records {
         var htmlBody bytes.Buffer
@@ -197,8 +202,3 @@ func main() {
         fmt.Printf("Email sent to: %s\n", record["Email"])
     }
 }
-
-// func atoi(str string) int {
-//     num, _ := strconv.Atoi(str)
-//     return num
-// }

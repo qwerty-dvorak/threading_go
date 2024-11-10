@@ -26,14 +26,13 @@
     <label for="attachments">Attachments:</label><br>
     <input type="file" id="attachments" name="attachments" accept="image/*" multiple><br><br>
 
-    <label for="excel">Excel Sheet:</label><br>
-    <input type="file" id="excel" name="excel" accept=".xlsx, .xls"><br><br>
+    <label for="csv">Csv :</label><br>
+    <input type="file" id="csv" name="csv" accept=".csv"><br><br>
 
     <button type="submit">Send</button>
   </form>
 
   <script>
-    // Replace 'YOUR_BACKEND_URL' with the actual backend URL saved in your environment
     const backendUrl = 'http://localhost:3000/';
 
     document.getElementById('emailForm').addEventListener('submit', function(event) {
@@ -47,7 +46,7 @@
         replyto: document.getElementById('replyto').value,
         body: document.getElementById('body').value,
         attachments: {},
-        excel: null
+        csv: null
       };
 
       const attachments = document.getElementById('attachments').files;
@@ -61,31 +60,31 @@
           };
           attachmentsProcessed++;
           if (attachmentsProcessed === attachments.length) {
-            processExcelFile();
+            processCsvFile();
           }
         };
         reader.readAsDataURL(attachments[i]);
       }
 
-      function processExcelFile() {
-        const excelFile = document.getElementById('excel').files[0];
-        if (excelFile) {
+      function processCsvFile() {
+        const csvFile = document.getElementById('csv').files[0];
+        if (csvFile) {
           const reader = new FileReader();
           reader.onload = function(e) {
-            emailData.excel = {
-              name: excelFile.name,
+            emailData.csv = {
+              name: csvFile.name,
               data: e.target.result
             };
             sendEmailData(emailData);
           };
-          reader.readAsDataURL(excelFile);
+          reader.readAsDataURL(csvFile);
         } else {
           sendEmailData(emailData);
         }
       }
 
       if (attachments.length === 0) {
-        processExcelFile();
+        processCsvFile();
       }
     });
 
