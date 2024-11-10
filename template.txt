@@ -39,9 +39,9 @@
         <p>We’ve got some information for you.</p>
         <p>You are {{.Age}} years old and live in {{.City}}
         <img src="cid:photo1.png" alt="Photo 1">
-        <p>Stay tuned for more updates.</p>
-        <img src="cid:photo2.jpg" alt="Photo 2">
-        <p>Sincerely,<br><strong>Sender</strong></p>
+        <p>Stay tuned for more updates  .</p>
+        <img src="cid:photo2.jpeg" alt="Photo 2">
+        <p>Sincerely,<br><strong>Sender {{.Random}} </strong></p>
     </div>
 </body>
 </html>

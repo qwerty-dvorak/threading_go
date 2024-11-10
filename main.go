@@ -1,28 +1,21 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/csv"
-	"encoding/json"
-	"fmt"
-	"html/template"
-	"io"
-	"log"
-	"mime/multipart"
-	"net/smtp"
-	"net/textproto"
-	"os"
-	"strconv"
-	"strings"
+    "bytes"
+    "encoding/base64"
+    "encoding/csv"
+    "encoding/json"
+    "fmt"
+    "html/template"
+    "io"
+    "log"
+    "mime/multipart"
+    "net/smtp"
+    "net/textproto"
+    "os"
+    //"strconv"
+    "strings"
 )
-
-type Participant struct {
-    Name  string
-    Email string
-    Age   int
-    City  string
-}
 
 type Image struct {
     Name     string
@@ -32,59 +25,55 @@ type Image struct {
 }
 
 const (
-	FROM     = "adheeshgarg0611@gmail.com"
-	FROMNAME = "Adheesh Garg"
-	SUBJECT  = "Test Email with MIME"
-	SMTPHOST = "smtp.gmail.com"
-	SMTPPORT = "587"
+    FROM     = "adheeshgarg0611@gmail.com"
+    FROMNAME = "Adheesh Garg"
+    SUBJECT  = "Test Email with MIME"
+    SMTPHOST = "smtp.gmail.com"
+    SMTPPORT = "587"
 )
 
 var PASSWORD string
 
 func real() string {
-	if PASSWORD != "" {
-		return PASSWORD
-	}
-	data, err := os.ReadFile("pass.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	PASSWORD = string(data)
-	return PASSWORD
+    if PASSWORD != "" {
+        return PASSWORD
+    }
+    data, err := os.ReadFile("pass.txt")
+    if err != nil {
+        log.Fatal(err)
+    }
+    PASSWORD = string(data)
+    return PASSWORD
 }
-
 
 func main() {
     real()
-    // Read images from JSON
-    
-    // ...
-    
+
     // Open and parse the JSON file
     jsonFile, err := os.Open("temp.json")
     if err != nil {
         log.Fatalf("Unable to open JSON file: %v", err)
     }
     defer jsonFile.Close()
-    
+
     // Read the JSON content
     byteValue, _ := io.ReadAll(jsonFile)
-    
+
     // Define a struct to hold the attachments
     type Attachments struct {
         Attachments map[string]struct {
             Data string `json:"data"`
         } `json:"attachments"`
     }
-    
+
     var attachments Attachments
-    
+
     // Unmarshal the JSON content
     err = json.Unmarshal(byteValue, &attachments)
     if err != nil {
         log.Fatalf("Error unmarshalling JSON: %v", err)
     }
-    
+
     // Create an array of Image structs
     var images []Image
     for name, attachment := range attachments.Attachments {
@@ -105,42 +94,52 @@ func main() {
             CID:      name,
         })
     }
-    // ... (Code from the previous sections)
 
     // Open the CSV file
     file, err := os.Open("tester.csv")
-    if (err != nil) {
+    if err != nil {
         log.Fatalf("Unable to open CSV file: %v", err)
     }
     defer file.Close()
 
     // Read CSV data
     reader := csv.NewReader(file)
-    records, err := reader.ReadAll()
-    if (err != nil) {
-        log.Fatalf("Unable to read CSV file: %v", err)
-    }
-
     // Parse the email template
     tmpl, err := template.ParseFiles("template.txt")
-    if (err != nil) {
+    if err != nil {
         log.Fatalf("Error parsing template: %v", err)
     }
 
+    headers, err := reader.Read()
+    if err != nil {
+        panic(err)
+    }
 
-    for _, record := range records[1:] { // Skip header
-        participant := Participant{
-            Name:  record[1],
-            Email: record[0],
-            Age:   atoi(record[2]),
-            City:  record[3],
+    var records []map[string]string
+
+    for {
+        recordData, err := reader.Read()
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+            panic(err)
         }
 
+        data := make(map[string]string)
+        for i, value := range recordData {
+            data[headers[i]] = value
+        }
+        records = append(records, data)
+    }
+
+
+    for _, record := range records {
         var htmlBody bytes.Buffer
         writer := multipart.NewWriter(&htmlBody)
 
         htmlBody.WriteString("From: " + FROM + "\r\n")
-        htmlBody.WriteString("To: " + participant.Email + "\r\n")
+        htmlBody.WriteString("To: " + record["Email"] + "\r\n")
         htmlBody.WriteString("Subject: " + SUBJECT + "\r\n")
         htmlBody.WriteString("MIME-Version: 1.0\r\n")
         htmlBody.WriteString("Content-Type: multipart/related; boundary=" + writer.Boundary() + "\r\n")
@@ -154,8 +153,8 @@ func main() {
             log.Fatalf("Error creating HTML part: %v", err)
         }
 
-        // Execute the template with participant data
-        err = tmpl.Execute(htmlPart, participant)
+        // Execute the template with record data
+        err = tmpl.Execute(htmlPart, record)
         if err != nil {
             log.Fatalf("Error executing template: %v", err)
         }
@@ -187,19 +186,19 @@ func main() {
 
         writer.Close()
         // Send the email using htmlBody.Bytes()
-        fmt.Printf("Prepared email for: %s\n", participant.Email)
+        fmt.Printf("Prepared email for: %s\n", record["Email"])
         auth := smtp.PlainAuth("", FROM, PASSWORD, SMTPHOST)
 
         // Send the email
-        err = smtp.SendMail(SMTPHOST+":"+SMTPPORT, auth, FROM, []string{participant.Email}, htmlBody.Bytes())
+        err = smtp.SendMail(SMTPHOST+":"+SMTPPORT, auth, FROM, []string{record["Email"]}, htmlBody.Bytes())
         if err != nil {
             log.Fatal(err)
         }
-        fmt.Printf("Email sent to: %s\n", participant.Email)
+        fmt.Printf("Email sent to: %s\n", record["Email"])
     }
 }
 
-func atoi(str string) int {
-    num, _ := strconv.Atoi(str)
-    return num
-}
+// func atoi(str string) int {
+//     num, _ := strconv.Atoi(str)
+//     return num
+// }
